@@ -12,6 +12,9 @@
 #define PORT "3490"
 #define MAXDATASIZE 100 
 
+
+
+
 // Helper function to convert sockaddr address into human readable IPv4 or IPV6
 void *get_in_addr(struct sockaddr *sa){
 	
@@ -23,7 +26,7 @@ void *get_in_addr(struct sockaddr *sa){
 	return  &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-
+// Print text to command line
 void printMsg(ssize_t length, char * buffer){
 
 	buffer[length] = '\0';
@@ -31,6 +34,7 @@ void printMsg(ssize_t length, char * buffer){
 
 }
 
+// Send text to server
 void handleUserInput(int sockfd){
 
 	char buffer[MAXDATASIZE];
@@ -43,6 +47,16 @@ void handleUserInput(int sockfd){
 	}
 }
 
+
+
+// TODO 
+// - separate getaddrinfo shit into separate function
+// - convert event loop so that it periodically waits for
+//  	a command then sends it to the server
+// - only update server information on refresh or after a command
+// 	entered
+// NOTE - its apparently commmon for first come to be first served when executing commands,
+// 		he who executes second executes against the modified dataset
 int main (int argc, char *argv[]){
 
 	

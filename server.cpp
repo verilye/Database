@@ -38,7 +38,9 @@ void *get_in_addr(struct sockaddr *sa){
 }
 
 int get_listening_fd(){
-	
+
+	// Using getaddrinfo, look through appropriate places to open a recieving socket
+
 	int sock_fd;
 	int status;
 	// This will be information about the selected node in the returned linked list
