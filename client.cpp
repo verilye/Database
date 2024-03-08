@@ -10,10 +10,9 @@
 #include <unistd.h>
 
 #define PORT "3490"
+
+// TODO: change the data buffer to be variable
 #define MAXDATASIZE 100 
-
-
-
 
 // Helper function to convert sockaddr address into human readable IPv4 or IPV6
 void *get_in_addr(struct sockaddr *sa){
@@ -26,52 +25,15 @@ void *get_in_addr(struct sockaddr *sa){
 	return  &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-// Print text to command line
-void printMsg(ssize_t length, char * buffer){
+int get_listening_fd(char *argv[]){
 
-	buffer[length] = '\0';
-	printf("%s",buffer);
-
-}
-
-// Send text to server
-void handleUserInput(int sockfd){
-
-	char buffer[MAXDATASIZE];
-
-	while(1){
-		printf("User Input:");
-		if(fgets(buffer, MAXDATASIZE, stdin)){		
-			send(sockfd, buffer,strlen(buffer), 0);	
-		}
-	}
-}
-
-
-
-// TODO 
-// - separate getaddrinfo shit into separate function
-// - convert event loop so that it periodically waits for
-//  	a command then sends it to the server
-// - only update server information on refresh or after a command
-// 	entered
-// NOTE - its apparently commmon for first come to be first served when executing commands,
-// 		he who executes second executes against the modified dataset
-int main (int argc, char *argv[]){
-
-	
-	// Get addr info in a linked list
-	// loop through and select socket
-	// bind() and then free up addrinfo linked list
-	// listen() for user input 
-
-	int status, sockfd, numbytes;
-	int yes = 1;
+	int sock_fd, status;
 	char s[INET6_ADDRSTRLEN];
 
-	// hints is the desired parameters
+	// hints is the desired parameters of the connection fd
 	// head will point to the first node in the linked list returned by getaddrinfo
 	// step will be used to iterate throught he list
+	
 	struct addrinfo hints, *head, *step;
 	// all values must be specified or 0
 	memset(&hints, 0, sizeof(hints));
@@ -88,15 +50,15 @@ int main (int argc, char *argv[]){
 
 		// Cases 
 		// suitable socket - bind to it and exit loop
-		if((sockfd = socket(step->ai_family, step->ai_socktype, step->ai_protocol)) == -1){
+		if((sock_fd = socket(step->ai_family, step->ai_socktype, step->ai_protocol)) == -1){  
 			// handle appropriate error for socket() output
 			perror("client:socket");
 			continue;
 		}
 
 		// connect
-		if((connect(sockfd, step->ai_addr, step->ai_addrlen) == -1)){
-			close(sockfd);
+		if((connect(sock_fd, step->ai_addr, step->ai_addrlen) == -1)){
+			close(sock_fd);
 			perror("client:connect");
 			continue;
 		}
@@ -110,20 +72,51 @@ int main (int argc, char *argv[]){
 		exit(1);
 	}
 	
-	// TODO: Create function that feeds an IPv4 or IPv6 value into the function
 	// Convert IP address to human readable form
-	// 2nd argument is the unreadable IP address, s is a buffer
 	inet_ntop(step->ai_family,get_in_addr((struct sockaddr *)step->ai_addr),s, sizeof(s));
 
 	printf("Connecting to server %s\n", s);
 	
 	//Frees the linked list 
 	freeaddrinfo(head);
+	
+	return sock_fd;
 
-	// An fd_set is used here for I/O multiplexing. We are going to swap
-	// between user input and readin from the server using select()
+}
+
+
+// Print text to command line
+void printMsg(ssize_t length, char * buffer){
+
+	buffer[length] = '\0';
+	printf("%s",buffer);
+
+}
+
+// TODO: change this to accept sql type commands and accept input equal to the maximum
+// 	data size
+void handleUserInput(int sockfd){
+
+	char buffer[MAXDATASIZE];
+
+	while(1){
+		printf("User Input:");
+		if(fgets(buffer, MAXDATASIZE, stdin)){		
+			send(sockfd, buffer,strlen(buffer), 0);	
+		}
+	}
+}
+
+// Start a loop to connect to the server and send out input to the server
+int main (int argc, char *argv[]){
+
+	int sock_fd, numbytes;
+	sock_fd = get_listening_fd(argv);
+
+	int yes = 1;
 	fd_set readfds;
 	pid_t pid = fork();
+
 
 	if(pid<0){
 		// if fork fails, exit program
@@ -132,7 +125,7 @@ int main (int argc, char *argv[]){
 
 	}else if(pid == 0){
 		// if child process, close socket and accept user input
-		handleUserInput(sockfd);
+		handleUserInput(sock_fd);
 
 	}else{
 		// if parent process, accept data from socket and update in real time
@@ -140,18 +133,15 @@ int main (int argc, char *argv[]){
 		while(1){
 	
 			// get size of the buffer returned by recv 
-			ssize_t bytes_read = recv(sockfd, buffer, MAXDATASIZE-1,0);
+			ssize_t bytes_read = recv(sock_fd, buffer, MAXDATASIZE-1,0);
 			if(bytes_read > 0){		
 				//print msg
 				printMsg(bytes_read, buffer);
 			}
 		}
 	}
-
 	
-
-	
-	close(sockfd);
+	close(sock_fd);
 
 	return 0;
 }

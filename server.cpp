@@ -138,13 +138,15 @@ int main(){
 	int new_fd;
 	socklen_t addrlen;
 	struct sockaddr_storage remote_addr;	// connectors address information		
-
+	
+	// TODO - add scalable buffer
 	char buf[256]; //Buffer for client data
 
 	char remoteIP[INET6_ADDRSTRLEN];
 		       
 	char s[INET6_ADDRSTRLEN];
 	
+	// TODO - scale up amount of connections allowed to fit DB conventions
 	// Start off with room for 5 connections
 	int fd_count = 0;
 	int fd_size = 5;
@@ -173,7 +175,6 @@ int main(){
 		}
 
 		// loop through connections looking for data to read
-		
 		for(int i = 0; i<fd_count; i++){
 			
 			// Founds a fd with polling flag enabled
@@ -197,49 +198,19 @@ int main(){
 							"socket %d\n",
 							inet_ntop(remote_addr.ss_family,
 								get_in_addr((struct sockaddr*)&remote_addr),
-								remoteIP, INET_ADDRSTRLEN),
-							new_fd);
-					
+								remoteIP, INET_ADDRSTRLEN),new_fd);
+	
 					}
 				}else{
-					// if not the listener fd, accept input from fd and then post to other connections
-					int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0 );
 
-					int sender_fd = pfds[i].fd;
-
-					if(nbytes <= 0){
-						// Got error or connection closed by client
-						if(nbytes == 0){
-							//Connection closed
-							printf("pollserver: socket %d hung up\n", sender_fd);
-						}else{
-							perror("recv");
-						}
-
-						close(pfds[i].fd); 
-
-						delete_from_poll_fds(pfds, i , &fd_count);
-
-					}else{
-						// Data accepted from a client
-						
-						for(int j = 0; j < fd_count;j++){
-							//Send to everyone
-							int dest_fd = pfds[j].fd;
-
-							// Do not send to listener or ourselves
-							if(dest_fd != listener_fd && dest_fd != sender_fd){
-								if(send(dest_fd, buf, nbytes,0) == -1){
-									perror("send");
-								}
-							}
-						}
-					}
+					// TODO - COMMANDS ENTER QUEUE TO ALTER DATA KEPT ON SERVER (first come, first served)
+					//
+					// TODO - When command fails send failure message
+					// TODO - When command successful send success message
 				}
 			}
 		}
 	}
-
 
 	return 0;
 }

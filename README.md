@@ -15,6 +15,11 @@ instructions first. Once a change is made, everyone will have access to the alte
 potentially if assumptions on the data are no longer true. The data will be stored inside a combination of 
 data structures (Hash table and AVL tree?) and formatted data will be inserted into it and come out when prompted. 
 
+#### client.cpp and server.cpp
+
+These are the data brokers, actual database logic will be seperated into seperate files 
+
+
 ### Reading Material
 
 Basic outline of what to do is found in implement Redis from scratch, a book about how to 
@@ -22,8 +27,6 @@ implement a NOSQL database. No code should be copied from there and it should be
 as a general pointer on where to focus your attention next.
 
 ### TODO
-- revisit current code and correct for cleanliness
-- remove chatting functionality and repurpose client and server to just socket connect
 - update connecting protocol so that its a little more sophisticated
     - what is being sent and recieved will need to be revamped totally to fit the new protocol
 - implement the event loop and nonblocking IO
