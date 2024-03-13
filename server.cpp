@@ -131,6 +131,11 @@ void delete_from_poll_fds(struct pollfd pfds[], int i, int *fd_count){
 
 }
 
+
+
+
+// TODO - seperate sending messages into a method
+
 int main(){
 
 	int listener_fd;
@@ -163,6 +168,7 @@ int main(){
 	pfds[0].events = POLLIN; // REPORT AS READY TO LISTEN TOO, this will ensure new connections are listend to
 
 	fd_count = 1;
+
   	printf("server: waiting for connections... \n");
 
 	while(true){ // accept() connections and store them
@@ -193,7 +199,9 @@ int main(){
 						perror("accept");
 					} else {
 						add_to_poll_fds(&pfds, new_fd, &fd_count, &fd_size);
-
+						char msg[16] = "0012Hello World";
+						send(new_fd,msg,16, 0);
+	
 						printf("pollserver: new connection from %s on "
 							"socket %d\n",
 							inet_ntop(remote_addr.ss_family,

@@ -11,9 +11,6 @@
 
 #define PORT "3490"
 
-// TODO: change the data buffer to be variable
-#define MAXDATASIZE 100 
-
 // Helper function to convert sockaddr address into human readable IPv4 or IPV6
 void *get_in_addr(struct sockaddr *sa){
 	
@@ -97,11 +94,11 @@ void printMsg(ssize_t length, char * buffer){
 // 	data size
 void handleUserInput(int sockfd){
 
-	char buffer[MAXDATASIZE];
+	char buffer[1000];
 
 	while(1){
 		printf("User Input:");
-		if(fgets(buffer, MAXDATASIZE, stdin)){		
+		if(fgets(buffer, 1000, stdin)){		
 			send(sockfd, buffer,strlen(buffer), 0);	
 		}
 	}
@@ -115,7 +112,12 @@ int main (int argc, char *argv[]){
 
 	int yes = 1;
 	fd_set readfds;
+	// TODO
+	// remove fork, not really a need for live server streaming in a db
 	pid_t pid = fork();
+
+	int msgSize = 0;
+	char buffer[4];
 
 
 	if(pid<0){
@@ -128,16 +130,38 @@ int main (int argc, char *argv[]){
 		handleUserInput(sock_fd);
 
 	}else{
+		
 		// if parent process, accept data from socket and update in real time
-		char buffer[MAXDATASIZE];
 		while(1){
-	
+
+			// TODO
+			// Variable buffer implementation by reading 4 digits from the front of data recieved
+
+			// Read 4 digits from buffer if exists
+			if(recv(sock_fd, buffer,4,0) == -1){
+				
+				perror("client: recv");
+				continue;
+			}
+				
+
+			// NOTE - apparently you can memcopy an integer from the buffer straight to
+			// an integer pointer and that will convert the data type for you?
+			memcpy(&msgSize, buffer, 4);
+			char msgBuf[msgSize];
+
+			// TODO - there is a problem here where messages are printed infinitely
+			// Add safe code to accept the number of bytes from the buffer specified in a header,
+			// otherwise reject
+
 			// get size of the buffer returned by recv 
-			ssize_t bytes_read = recv(sock_fd, buffer, MAXDATASIZE-1,0);
+			ssize_t bytes_read = recv(sock_fd, msgBuf,msgSize-1,0);
 			if(bytes_read > 0){		
 				//print msg
-				printMsg(bytes_read, buffer);
+				printMsg(bytes_read, msgBuf);
 			}
+	
+			
 		}
 	}
 	
