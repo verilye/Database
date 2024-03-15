@@ -22,7 +22,7 @@ void *get_in_addr(struct sockaddr *sa){
 	return  &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int get_listening_fd(char *argv[]){
+int get_listening_fd(){
 
 	int sock_fd, status;
 	char s[INET6_ADDRSTRLEN];
@@ -37,7 +37,7 @@ int get_listening_fd(char *argv[]){
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if((status = getaddrinfo(argv[1], PORT, &hints, &head)) != 0){
+	if((status = getaddrinfo(NULL, PORT, &hints, &head)) != 0){
 		fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
 		return -1;
 	}
@@ -84,86 +84,75 @@ int get_listening_fd(char *argv[]){
 
 // Print text to command line
 void printMsg(ssize_t length, char * buffer){
-
-	buffer[length] = '\0';
+	printf("Test");
 	printf("%s",buffer);
 
 }
 
-// TODO: change this to accept sql type commands and accept input equal to the maximum
-// 	data size
 void handleUserInput(int sockfd){
-
+	
+	
 	char buffer[1000];
 
-	while(1){
-		printf("User Input:");
-		if(fgets(buffer, 1000, stdin)){		
-			send(sockfd, buffer,strlen(buffer), 0);	
-		}
+	printf("User Input:");
+	if(fgets(buffer, 1000, stdin)){		
+		send(sockfd, buffer,strlen(buffer), 0);	
 	}
+	
 }
 
 // Start a loop to connect to the server and send out input to the server
 int main (int argc, char *argv[]){
 
-	int sock_fd, numbytes;
-	sock_fd = get_listening_fd(argv);
-
+	int sock_fd = get_listening_fd();
 	int yes = 1;
+
+	// TODO - review need for this, or write an explanation
 	fd_set readfds;
-	// TODO
-	// remove fork, not really a need for live server streaming in a db
-	pid_t pid = fork();
+	
+	char buffer[17];
+	
+	
 
-	int msgSize = 0;
-	char buffer[4];
+		// Read 4 digits from buffer if exists
+		ssize_t bytes_read = recv(sock_fd, buffer, 17, 0);
+		if (bytes_read == -1) {
+			perror("client: recv");
+			//continue;
+		}
 
 
-	if(pid<0){
-		// if fork fails, exit program
-		perror("Fork failed");
-		exit(EXIT_FAILURE);
+		// TODO - fix problem 
+		// Problem description - the command line is 'overloaded' with bullshit and doesnt print things if 
+		// too much is shoved into it. In this case, print message is called thousands of times when in a while loop
+		// and is spat out when the server is shut down before the client. The entire send() message is sent, input needs
+		// to be stored and handled properly such that recv blocks once everything has been recieved by the client and 
+		// all variables are cleared so they arent printed from the last iterations
 
-	}else if(pid == 0){
-		// if child process, close socket and accept user input
-		handleUserInput(sock_fd);
+		// Use first 4 characters from buffer as size of rest of the buffer
+		/*int32_t msgSize = 0;
 
-	}else{
-		
-		// if parent process, accept data from socket and update in real time
-		while(1){
-
-			// TODO
-			// Variable buffer implementation by reading 4 digits from the front of data recieved
-
-			// Read 4 digits from buffer if exists
-			if(recv(sock_fd, buffer,4,0) == -1){
-				
-				perror("client: recv");
+			if (bytes_read >= 4) {
+				memcpy(&msgSize, buffer, 4);
+			}else {
+				printf("bab");
 				continue;
 			}
-				
+		
 
-			// NOTE - apparently you can memcopy an integer from the buffer straight to
-			// an integer pointer and that will convert the data type for you?
-			memcpy(&msgSize, buffer, 4);
-			char msgBuf[msgSize];
-
-			// TODO - there is a problem here where messages are printed infinitely
-			// Add safe code to accept the number of bytes from the buffer specified in a header,
-			// otherwise reject
-
-			// get size of the buffer returned by recv 
-			ssize_t bytes_read = recv(sock_fd, msgBuf,msgSize-1,0);
-			if(bytes_read > 0){		
-				//print msg
-				printMsg(bytes_read, msgBuf);
+			if (msgSize > 1000) {
+				printf("Recieved too large message");
+				continue;
 			}
+
+			char msgBuf[4+ msgSize + 1];
+			memcpy(msgBuf, &buffer[4], msgSize);
+			msgBuf[4 + msgSize] = '\0';*/	
+
+		printMsg(17, buffer);
+
 	
-			
-		}
-	}
+
 	
 	close(sock_fd);
 

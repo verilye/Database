@@ -11,10 +11,6 @@
 #include <sys/wait.h>
 #include <poll.h>
 
-// For simplicity Im going to use the protocol example that was in the tutorial book
-// 4 digit msg size number then message
-// msgsize - msg - msgsize - msg
-
 #define PORT "3490" 	// the port users will be connected to 
 #define BACKLOG 10 	// How many connection the queue will hold
 
@@ -154,7 +150,7 @@ int main(){
 	// TODO - scale up amount of connections allowed to fit DB conventions
 	// Start off with room for 5 connections
 	int fd_count = 0;
-	int fd_size = 5;
+	int fd_size = 30;
 	struct pollfd *pfds = (struct pollfd *)malloc(sizeof *pfds * fd_size);
 
 	listener_fd = get_listening_fd();
@@ -199,8 +195,13 @@ int main(){
 						perror("accept");
 					} else {
 						add_to_poll_fds(&pfds, new_fd, &fd_count, &fd_size);
-						char msg[16] = "0012Hello World";
-						send(new_fd,msg,16, 0);
+						
+						char msg[17] = "0013Hello World\0";
+						
+						ssize_t bytes_sent = send(new_fd,msg,17, 0);
+						if (bytes_sent == -1) {
+							perror("server:send()");
+						}
 	
 						printf("pollserver: new connection from %s on "
 							"socket %d\n",
