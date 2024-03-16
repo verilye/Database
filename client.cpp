@@ -84,7 +84,7 @@ int get_listening_fd(){
 
 // Print text to command line
 void printMsg(ssize_t length, char * buffer){
-	printf("Test");
+
 	printf("%s",buffer);
 
 }
@@ -110,17 +110,7 @@ int main (int argc, char *argv[]){
 	// TODO - review need for this, or write an explanation
 	fd_set readfds;
 	
-	char buffer[17];
-	
-	
-
-		// Read 4 digits from buffer if exists
-		ssize_t bytes_read = recv(sock_fd, buffer, 17, 0);
-		if (bytes_read == -1) {
-			perror("client: recv");
-			//continue;
-		}
-
+	//while (1) {
 
 		// TODO - fix problem 
 		// Problem description - the command line is 'overloaded' with bullshit and doesnt print things if 
@@ -128,30 +118,39 @@ int main (int argc, char *argv[]){
 		// and is spat out when the server is shut down before the client. The entire send() message is sent, input needs
 		// to be stored and handled properly such that recv blocks once everything has been recieved by the client and 
 		// all variables are cleared so they arent printed from the last iterations
+		char head_buffer[4];
+		uint32_t msgSize = 0;
 
-		// Use first 4 characters from buffer as size of rest of the buffer
-		/*int32_t msgSize = 0;
+		// Read 4 digits from buffer if exists (the header)
+		ssize_t bytes_read = recv(sock_fd, head_buffer, 4, 0);
+		if (bytes_read == -1) {
+			perror("client: recv");
+			//continue;
+		}
+		else if (bytes_read == 0) {
+			//continue;
+		}
+		else {
 
-			if (bytes_read >= 4) {
-				memcpy(&msgSize, buffer, 4);
-			}else {
-				printf("bab");
-				continue;
-			}
-		
+			msgSize = atoi(head_buffer);
 
-			if (msgSize > 1000) {
-				printf("Recieved too large message");
-				continue;
-			}
+		}
 
-			char msgBuf[4+ msgSize + 1];
-			memcpy(msgBuf, &buffer[4], msgSize);
-			msgBuf[4 + msgSize] = '\0';*/	
+		printf("%u\n", msgSize);
 
-		printMsg(17, buffer);
+		/*if (msgSize > 1000) {
+			printf("Recieved too large message");
+			continue;
+		}
 
-	
+		// Read the "body" of the message
+		char msg_Buf[msgSize+1];
+		ssize_t msg_bytes_read = recv(sock_fd, msg_Buf, msgSize,0);
+		msg_Buf[msgSize] = '\0';
+
+		printMsg(msgSize, msg_Buf);*/
+
+	//}
 
 	
 	close(sock_fd);
