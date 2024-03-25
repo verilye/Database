@@ -36,19 +36,19 @@ void *get_in_addr(struct sockaddr *sa){
 int get_listening_fd(){
 
 	// Using getaddrinfo, look through appropriate places to open a recieving socket
-
 	int sock_fd;
 	int status;
+
 	// This will be information about the selected node in the returned linked list
 	struct addrinfo hints, *servinfo, *step; // will point to results
 	struct sigaction sa;
 	int yes = 1;
 	int rv;
 				   
-	memset(&hints, 0, sizeof(hints)); // Set all values in hints to 0
-	hints.ai_family = AF_UNSPEC; // Unspecified whether IPv4 or IPv6
-	hints.ai_socktype = SOCK_STREAM; // Socket type connections
-	hints.ai_flags = AI_PASSIVE; // handle IP for me
+	memset(&hints, 0, sizeof(hints));	// Set all values in hints to 0
+	hints.ai_family = AF_UNSPEC;		// Unspecified whether IPv4 or IPv6
+	hints.ai_socktype = SOCK_STREAM;	// Socket type connections
+	hints.ai_flags = AI_PASSIVE;		// handle IP for me
 				
 	// We use getaddrinfo to bind to the first port that fulfils our requirements
 	// that is valid. We can dispose of it immediately after. 
@@ -194,6 +194,7 @@ int main(){
 					if(new_fd == -1){
 						perror("accept");
 					} else {
+
 						add_to_poll_fds(&pfds, new_fd, &fd_count, &fd_size);
 						
 						char msg[17] = "0013Hello World\0";
@@ -212,8 +213,48 @@ int main(){
 					}
 				}else{
 
-					// TODO - COMMANDS ENTER QUEUE TO ALTER DATA KEPT ON SERVER (first come, first served)
-					//
+					char head_buffer[4];
+					uint32_t msgSize = 0;
+
+					// Read 4 digits from buffer if exists (the header)
+					ssize_t bytes_read = recv(pfds[i].fd, head_buffer, 4, 0);
+					if (bytes_read == -1) {
+						perror("server: recv");
+						continue;
+					}
+					else if (bytes_read == 0) {
+						continue;
+					}
+
+					if (bytes_read >= 4) {
+
+						// atoi works by converting to the respective ascii character  = c + '0' etc 
+						msgSize = atoi(head_buffer);
+
+						// Read the "body" of the message
+						char msg_Buf[msgSize + 1];
+						ssize_t msg_bytes_read = recv(pfds[i].fd, msg_Buf, msgSize, 0);
+
+						if (msg_bytes_read != msgSize) {
+							perror("server:recv error");
+							continue;
+						}
+						msg_Buf[msgSize] = '\0';
+
+						printf("%s",msg_Buf);
+
+					}
+
+
+					// TODO - big list
+
+					// Accept messages from connected sockets
+
+					// Parse them in another part of the program (i.e SQL style commands to manipulate data)
+
+					// Look up the next steps that would typically happen in a proper database system
+
+					// TODO - COMMANDS ENTER QUEUE TO ALTER DATA KEPT ON SERVER (first come, first served
 					// TODO - When command fails send failure message
 					// TODO - When command successful send success message
 				}

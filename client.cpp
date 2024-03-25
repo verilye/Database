@@ -27,10 +27,7 @@ int get_listening_fd(){
 	int sock_fd, status;
 	char s[INET6_ADDRSTRLEN];
 
-	// hints is the desired parameters of the connection fd
-	// head will point to the first node in the linked list returned by getaddrinfo
-	// step will be used to iterate throught he list
-	
+	// socket information stored in a struct
 	struct addrinfo hints, *head, *step;
 	// all values must be specified or 0
 	memset(&hints, 0, sizeof(hints));
@@ -81,43 +78,69 @@ int get_listening_fd(){
 
 }
 
-
 // Print text to command line
-void printMsg(ssize_t length, char * buffer){
+void printMsg(char * buffer){
 
-	printf("%s",buffer);
+	printf("%s\n",buffer);
 
 }
 
 void handleUserInput(int sockfd){
-	
-	
+
+
+	// TODO - add a function here that appends the length of the message to the front 
+	//		of the message being sent
+
+	int strSize = 0;
 	char buffer[1000];
 
-	printf("User Input:");
-	if(fgets(buffer, 1000, stdin)){		
-		send(sockfd, buffer,strlen(buffer), 0);	
+	printf("user input:");
+	if ((strSize = ((char)strlen(fgets(buffer+4, 1000, stdin))))) {
+
+		// MAX BUFFER SIZE, should be base 10 hopefully
+		int v = 1000;
+		for (int i = 0; i < 4; i++) {
+
+			int temp = (strSize / v);
+			if (temp < 1) {
+
+				buffer[i] = '0';
+			}
+			else {
+
+				buffer[i] = ('0' + temp);
+
+			}
+
+			v /= 10;
+
+		}
+
+
+		printf("%s", buffer);
+
+
+		// something going wrong here
+
+		ssize_t bytes_sent = send(sockfd, buffer, strlen(buffer), 0);
+		if (bytes_sent == -1) {
+			perror("client:send()");
+		}
+
+
 	}
-	
 }
 
 // Start a loop to connect to the server and send out input to the server
 int main (int argc, char *argv[]){
 
+	// TODO - decide on the size of queries allowed and make sure max buffer that size
+
 	int sock_fd = get_listening_fd();
 	int yes = 1;
-
-	// TODO - review need for this, or write an explanation
-	fd_set readfds;
 	
-	//while (1) {
+	while (1) {
 
-		// TODO - fix problem 
-		// Problem description - the command line is 'overloaded' with bullshit and doesnt print things if 
-		// too much is shoved into it. In this case, print message is called thousands of times when in a while loop
-		// and is spat out when the server is shut down before the client. The entire send() message is sent, input needs
-		// to be stored and handled properly such that recv blocks once everything has been recieved by the client and 
-		// all variables are cleared so they arent printed from the last iterations
 		char head_buffer[4];
 		uint32_t msgSize = 0;
 
@@ -125,32 +148,34 @@ int main (int argc, char *argv[]){
 		ssize_t bytes_read = recv(sock_fd, head_buffer, 4, 0);
 		if (bytes_read == -1) {
 			perror("client: recv");
-			//continue;
-		}
-		else if (bytes_read == 0) {
-			//continue;
-		}
-		else {
-
-			msgSize = atoi(head_buffer);
-
-		}
-
-		printf("%u\n", msgSize);
-
-		/*if (msgSize > 1000) {
-			printf("Recieved too large message");
 			continue;
 		}
+		else if (bytes_read == 0) {
+			continue;
+		}
+		
+		if (bytes_read >= 4) {
 
-		// Read the "body" of the message
-		char msg_Buf[msgSize+1];
-		ssize_t msg_bytes_read = recv(sock_fd, msg_Buf, msgSize,0);
-		msg_Buf[msgSize] = '\0';
+			// atoi works by converting to the respective ascii character  = c + '0' etc 
+			msgSize = atoi(head_buffer);
 
-		printMsg(msgSize, msg_Buf);*/
+			// Read the "body" of the message
+			char msg_Buf[msgSize + 1];
+			ssize_t msg_bytes_read = recv(sock_fd, msg_Buf, msgSize, 0);
+			
+			if (msg_bytes_read != msgSize) {
+				perror("client:recv error");
+				continue;
+			}
+			msg_Buf[msgSize] = '\0';
+			
+			printMsg(msg_Buf);
+			handleUserInput(sock_fd);
 
-	//}
+		}
+
+		
+	}
 
 	
 	close(sock_fd);
