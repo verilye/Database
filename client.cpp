@@ -87,17 +87,14 @@ void printMsg(char * buffer){
 
 void handleUserInput(int sockfd){
 
-
-	// TODO - add a function here that appends the length of the message to the front 
-	//		of the message being sent
-
+	// Reads the size of the message and appends its length as a 4 byte header
 	int strSize = 0;
 	char buffer[1000];
 
 	printf("user input:");
 	if ((strSize = ((char)strlen(fgets(buffer+4, 1000, stdin))))) {
 
-		// MAX BUFFER SIZE, should be base 10 hopefully
+		//TODO - replace with MAX BUFFER SIZE, should be base 10 hopefully
 		int v = 1000;
 		for (int i = 0; i < 4; i++) {
 
@@ -116,18 +113,10 @@ void handleUserInput(int sockfd){
 
 		}
 
-
-		printf("%s", buffer);
-
-
-		// something going wrong here
-
 		ssize_t bytes_sent = send(sockfd, buffer, strlen(buffer), 0);
 		if (bytes_sent == -1) {
 			perror("client:send()");
 		}
-
-
 	}
 }
 

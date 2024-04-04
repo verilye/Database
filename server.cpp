@@ -127,9 +127,6 @@ void delete_from_poll_fds(struct pollfd pfds[], int i, int *fd_count){
 
 }
 
-
-
-
 // TODO - seperate sending messages into a method
 
 int main(){
@@ -240,8 +237,61 @@ int main(){
 							continue;
 						}
 						msg_Buf[msgSize] = '\0';
+						// msg_Buf holde de inpoot
 
-						printf("%s",msg_Buf);
+						// TODO - 
+						// Read a command from the client
+						// Write data to a file or the equivalent that is used in a database
+
+						// TODO -
+						// Add a protocol for different commands
+						// For example, the client msg 'header' says what command type it is, 
+						// then it is sent to a function that handles that command type
+						// After the command type might be other informaiton which is picked
+						// out from the header and read sequentially 
+
+
+						// TODO - IMPORTANT
+						// before going whole hog on writing to a complicated filetype, just write to a plain
+						// text file for now
+						// TODO -
+						// I am going to compeltely rip SQLites' filetype from them and steal it for myself
+						// https://sqlite.org/fileformat2.html 
+						// SQLite has a mega file that stores all the data and has a 100byte header that gives
+						// all the information that is needed to use the mega file
+
+						// TODO  
+						// - parse input as SQL type commands
+						// - commit log for commands applied to the db
+						// - write to memtable
+						// - flush from memtable to sstable (More permanent record)
+						
+						// TODO
+						// Put some kind of encryption on the database files / potentially make own filetype
+						
+						// ANATOMY OF AN APACHE CASSANDRA SSTABLE
+						// - Once new SStable has been written to, old one removed
+						// - Data.db actual data
+						//		rows are organised by partition. These partiions are sorted in token order (by a 
+						//		hash of the partition key). Within a partition rows are stored in the order of their 
+						//		clustering keys
+						// 
+						// - Index.db index from partition keys to positions in the data.db file, may include row index
+						// - Filter.db bloom filter of the partition keys in the SSTable
+						// - compressioninfo.db metadata about the offsets and lengths of compression chunks in data.db
+						// - statistics.db stores metadata about the sstable including timestamps, tombstones, clustering
+						//		keys compaction, repair, compression etc
+						// - digest.crc32 a CRC-32 digest of the DAta.db file
+						// - TOC.txt a plain text list of the component files for the SSTable
+
+
+						// SSTables can be optionally compresssed using block-based compression
+
+						// get - lookup records and return them in some kind of readable format?
+						// 
+						// set - find the location of records and then replace them as necessary
+						// 
+						// del - find the location of records, remove them and then clean up
 
 					}
 
